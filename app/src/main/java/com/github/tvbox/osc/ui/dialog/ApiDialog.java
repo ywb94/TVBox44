@@ -40,11 +40,20 @@ public class ApiDialog extends BaseDialog {
     private ImageView ivQRCode;
     private TextView tvAddress;
     private EditText inputApi;
+    private  EditText inputLive;
+    private  EditText inputEPG;
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void refresh(RefreshEvent event) {
         if (event.type == RefreshEvent.TYPE_API_URL_CHANGE) {
             inputApi.setText((String) event.obj);
+        }
+        //ywb add
+        if (event.type == RefreshEvent.TYPE_LIVE_URL_CHANGE) {
+            inputLive.setText((String) event.obj);
+        }
+        if (event.type == RefreshEvent.TYPE_EPG_URL_CHANGE) {
+            inputEPG.setText((String) event.obj);
         }
     }
 
@@ -55,12 +64,19 @@ public class ApiDialog extends BaseDialog {
         ivQRCode = findViewById(R.id.ivQRCode);
         tvAddress = findViewById(R.id.tvAddress);
         inputApi = findViewById(R.id.input);
+        //ywb add
+        inputLive = findViewById(R.id.input_live);
+        inputLive.setText(Hawk.get(HawkConfig.LIVE_URL, ""));
+        inputEPG = findViewById(R.id.input_epg);
+        inputEPG.setText(Hawk.get(HawkConfig.EPG_URL, ""));
         //内置网络接口在此处添加
         inputApi.setText(Hawk.get(HawkConfig.API_URL, ""));
         findViewById(R.id.inputSubmit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String newApi = inputApi.getText().toString().trim();
+                String newLive = inputLive.getText().toString().trim();
+                String newEPG = inputEPG.getText().toString().trim();
                 if (!newApi.isEmpty()) {
                     ArrayList<String> history = Hawk.get(HawkConfig.API_HISTORY, new ArrayList<String>());
                     if (!history.contains(newApi))
@@ -70,6 +86,26 @@ public class ApiDialog extends BaseDialog {
                     Hawk.put(HawkConfig.API_HISTORY, history);
                     listener.onchange(newApi);
                     dismiss();
+                }
+                //ywb add
+                Hawk.put(HawkConfig.LIVE_URL, newLive);
+                if (!newLive.isEmpty()) {
+                    ArrayList<String> liveHistory = Hawk.get(HawkConfig.LIVE_HISTORY, new ArrayList<String>());
+                    if (!liveHistory.contains(newLive))
+                        liveHistory.add(0, newLive);
+                    if (liveHistory.size() > 20)
+                        liveHistory.remove(20);
+                    Hawk.put(HawkConfig.LIVE_HISTORY, liveHistory);
+                }
+                // Capture EPG input into Settings
+                Hawk.put(HawkConfig.EPG_URL, newEPG);
+                if (!newEPG.isEmpty()) {
+                    ArrayList<String> EPGHistory = Hawk.get(HawkConfig.EPG_HISTORY, new ArrayList<String>());
+                    if (!EPGHistory.contains(newEPG))
+                        EPGHistory.add(0, newEPG);
+                    if (EPGHistory.size() > 20)
+                        EPGHistory.remove(20);
+                    Hawk.put(HawkConfig.EPG_HISTORY, EPGHistory);
                 }
             }
         });

@@ -375,73 +375,90 @@ public class ApiConfig {
         }
         // 直播源
         liveChannelGroupList.clear();           //修复从后台切换重复加载频道列表
+        String liveURL = Hawk.get(HawkConfig.LIVE_URL, "http://101.35.109.250/tv.m3u");
+        String epgURL  = Hawk.get(HawkConfig.EPG_URL, "");
+        String liveURL_final = null;
         try {
-            JsonObject livesOBJ = infoJson.get("lives").getAsJsonArray().get(0).getAsJsonObject();
-            String lives = livesOBJ.toString();
-            int index = lives.indexOf("proxy://");
-            if (index != -1) {
-                int endIndex = lives.lastIndexOf("\"");
-                String url = lives.substring(index, endIndex);
-                url = DefaultConfig.checkReplaceProxy(url);
+            if (infoJson.has("lives") && infoJson.get("lives").getAsJsonArray() != null) {
+                JsonObject livesOBJ = infoJson.get("lives").getAsJsonArray().get(0).getAsJsonObject();
+                String lives = livesOBJ.toString();
+                int index = lives.indexOf("proxy://");
+                if (index != -1) {
+                    int endIndex = lives.lastIndexOf("\"");
+                    String url = lives.substring(index, endIndex);
+                    url = DefaultConfig.checkReplaceProxy(url);
 
-                //clan
-                String extUrl = Uri.parse(url).getQueryParameter("ext");
-                if (extUrl != null && !extUrl.isEmpty()) {
-                    String extUrlFix;
-                    if(extUrl.startsWith("http") || extUrl.startsWith("clan://")){
-                        extUrlFix = extUrl;
-                    }else {
-                        extUrlFix = new String(Base64.decode(extUrl, Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP), "UTF-8");
-                    }
+                    //clan
+                    String extUrl = Uri.parse(url).getQueryParameter("ext");
+                    if (extUrl != null && !extUrl.isEmpty()) {
+                        String extUrlFix;
+                        if (extUrl.startsWith("http") || extUrl.startsWith("clan://")) {
+                            extUrlFix = extUrl;
+                        } else {
+                            extUrlFix = new String(Base64.decode(extUrl, Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP), "UTF-8");
+                        }
 //                    System.out.println("extUrlFix :"+extUrlFix);
-                    if (extUrlFix.startsWith("clan://")) {
-                        extUrlFix = clanContentFix(clanToAddress(apiUrl), extUrlFix);
+                        if (extUrlFix.startsWith("clan://")) {
+                            extUrlFix = clanContentFix(clanToAddress(apiUrl), extUrlFix);
+                        }
+                        if (liveURL.isEmpty()) {
+                            Hawk.put(HawkConfig.LIVE_URL, extUrlFix);
+                        } else {
+                            extUrlFix = liveURL;
+                        }
+                        liveURL_final = extUrlFix;
+                        extUrlFix = Base64.encodeToString(extUrlFix.getBytes("UTF-8"), Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP);
+                        url = url.replace(extUrl, extUrlFix);
                     }
-                    extUrlFix = Base64.encodeToString(extUrlFix.getBytes("UTF-8"), Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP);
-                    url = url.replace(extUrl, extUrlFix);
-                }
 //                System.out.println("urlLive :"+url);
 
-                //设置epg
-                if(livesOBJ.has("epg")){
-                    String epg =livesOBJ.get("epg").getAsString();
-                    Hawk.put(HawkConfig.EPG_URL,epg);
-                }
-                //直播播放器类型
-                if(livesOBJ.has("playerType")){
-                    String livePlayType =livesOBJ.get("playerType").getAsString();
-                    Hawk.put(HawkConfig.LIVE_PLAY_TYPE,livePlayType);
-                }
+                    //设置epg
+                    if (livesOBJ.has("epg")) {
+                        String epg = livesOBJ.get("epg").getAsString();
+                        Hawk.put(HawkConfig.EPG_URL, epg);
+                    }
+                    //直播播放器类型
+                    if (livesOBJ.has("playerType")) {
+                        String livePlayType = livesOBJ.get("playerType").getAsString();
+                        Hawk.put(HawkConfig.LIVE_PLAY_TYPE, livePlayType);
+                    }
 
-                LiveChannelGroup liveChannelGroup = new LiveChannelGroup();
-                liveChannelGroup.setGroupName(url);
-                liveChannelGroupList.add(liveChannelGroup);
-            } else {
-                if(!lives.contains("type")){
-                    loadLives(infoJson.get("lives").getAsJsonArray());
-                }else {
-                    JsonObject fengMiLives = infoJson.get("lives").getAsJsonArray().get(0).getAsJsonObject();
-                    String type=fengMiLives.get("type").getAsString();
-                    if(type.equals("0")){
-                        String url =fengMiLives.get("url").getAsString();
-                        //设置epg
-                        if(fengMiLives.has("epg")){
-                            String epg =fengMiLives.get("epg").getAsString();
-                            Hawk.put(HawkConfig.EPG_URL,epg);
-                        }
-                        //直播播放器类型
-                        if(livesOBJ.has("playerType")){
-                            String livePlayType =livesOBJ.get("playerType").getAsString();
-                            Hawk.put(HawkConfig.LIVE_PLAY_TYPE,livePlayType);
-                        }
+                    LiveChannelGroup liveChannelGroup = new LiveChannelGroup();
+                    liveChannelGroup.setGroupName(url);
+                    liveChannelGroupList.add(liveChannelGroup);
+                } else {
+                    if (!lives.contains("type")) {
+                        loadLives(infoJson.get("lives").getAsJsonArray());
+                    } else {
+                        JsonObject fengMiLives = infoJson.get("lives").getAsJsonArray().get(0).getAsJsonObject();
+                        String type = fengMiLives.get("type").getAsString();
+                        if (type.equals("0")) {
+                            String url = fengMiLives.get("url").getAsString();
+                            //设置epg
+                            if (fengMiLives.has("epg")) {
+                                String epg = fengMiLives.get("epg").getAsString();
+                                Hawk.put(HawkConfig.EPG_URL, epg);
+                            }
+                            //直播播放器类型
+                            if (livesOBJ.has("playerType")) {
+                                String livePlayType = livesOBJ.get("playerType").getAsString();
+                                Hawk.put(HawkConfig.LIVE_PLAY_TYPE, livePlayType);
+                            }
 
-                        if(url.startsWith("http")){
-                            url = Base64.encodeToString(url.getBytes("UTF-8"), Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP);
+                            if (url.startsWith("http")) {
+                                if (liveURL.isEmpty()) {
+                                    Hawk.put(HawkConfig.LIVE_URL, url);
+                                } else {
+                                    url = liveURL;
+                                }
+
+                                url = Base64.encodeToString(url.getBytes("UTF-8"), Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP);
+                            }
+                            url = "http://127.0.0.1:9978/proxy?do=live&type=txt&ext=" + url;
+                            LiveChannelGroup liveChannelGroup = new LiveChannelGroup();
+                            liveChannelGroup.setGroupName(url);
+                            liveChannelGroupList.add(liveChannelGroup);
                         }
-                        url ="http://127.0.0.1:9978/proxy?do=live&type=txt&ext="+url;
-                        LiveChannelGroup liveChannelGroup = new LiveChannelGroup();
-                        liveChannelGroup.setGroupName(url);
-                        liveChannelGroupList.add(liveChannelGroup);
                     }
                 }
             }
