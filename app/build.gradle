@@ -56,6 +56,7 @@ android {
         additionalParameters += '--set-max-idx-number=48000'
         additionalParameters += '--minimal-main-dex'
     }
+    namespace 'com.github.tvbox.osc'
 }
 
 repositories {
