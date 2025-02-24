@@ -85,7 +85,7 @@ public class ApiDialog extends BaseDialog {
                         history.remove(30);
                     Hawk.put(HawkConfig.API_HISTORY, history);
                     listener.onchange(newApi);
-                    dismiss();
+
                 }
                 //ywb add
                 Hawk.put(HawkConfig.LIVE_URL, newLive);
@@ -107,6 +107,7 @@ public class ApiDialog extends BaseDialog {
                         EPGHistory.remove(20);
                     Hawk.put(HawkConfig.EPG_HISTORY, EPGHistory);
                 }
+                dismiss();
             }
         });
         findViewById(R.id.apiHistory).setOnClickListener(new View.OnClickListener() {
